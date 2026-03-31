@@ -1,13 +1,50 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  
+}
+
+// 1. User Model
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String
+  role            Role      @default(ATTENDEE)
+  organisedEvents Event[]   @relation("EventOrganiser")
+  bookings        Booking[]
+  createdAt       DateTime  @default(now())
+}
+
+enum Role {
+  ORGANISER
+  ATTENDEE
+}
+
+// 2. Event Model
+model Event {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  dateTime    DateTime
+  capacity    Int
+  organiserId String
+  organiser   User      @relation("EventOrganiser", fields: [organiserId], references: [id])
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+}
+
+// 3. Booking Model
+model Booking {
+  id         String   @id @default(uuid())
+  eventId    String
+  event      Event    @relation(fields: [eventId], references: [id])
+  attendeeId String
+  attendee   User     @relation(fields: [attendeeId], references: [id])
+  createdAt  DateTime @default(now())
+
+  // Ensures a user cannot book the exact same event twice
+  @@unique([eventId, attendeeId]) 
 }
